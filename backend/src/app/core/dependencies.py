@@ -10,6 +10,7 @@ from core.config import ALGORITHM, SECRET_KEY
 from infrastructure.persistence.models.user import User
 from core.database import get_db
 from services.prompts.service import PromptService
+from services.users.service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -52,3 +53,9 @@ async def get_prompt_service(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ) -> PromptService:
     return PromptService(db, user_id=current_user.id)
+
+
+async def get_user_service(
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> UserService:
+    return UserService(db, admin_id=current_user.id)

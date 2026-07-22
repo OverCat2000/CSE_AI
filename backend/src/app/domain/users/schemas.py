@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import BaseModel, computed_field, EmailStr, model_validator, ConfigDict
 from datetime import datetime, timezone, timedelta
 from domain.shared.schemas import PaginationMeta
@@ -29,6 +30,17 @@ class UserAdminView(BaseModel):
 class PaginatedUsers(BaseModel):
     data: list[UserAdminView]
     meta: PaginationMeta
+
+
+class UserRoleUpdate(BaseModel):
+    role: Literal["user", "admin"]
+
+
+class UserStats(BaseModel):
+    total: int
+    active: int
+    admins: int
+    online: int
 
 
 class UserRegister(BaseModel):

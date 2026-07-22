@@ -153,3 +153,114 @@ class TestDeactivateUser:
             f"/api/v1/admin/users/{regular_user.id}/deactivate", headers=auth_headers
         )
         assert response.status_code == 403
+
+
+class TestActivateUser:
+    async def test_admin_can_activate_user(
+        self, client: AsyncClient, admin_user: User, inactive_user: User, admin_headers: dict
+    ):
+        response = await client.patch(
+            f"/api/v1/admin/users/{inactive_user.id}/activate", headers=admin_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["is_active"] is True
+
+    async def test_activate_nonexistent_user_returns_404(
+        self, client: AsyncClient, admin_user: User, admin_headers: dict
+    ):
+        response = await client.patch(
+            "/api/v1/admin/users/99999/activate", headers=admin_headers
+        )
+        assert response.status_code == 404
+
+    async def test_regular_user_cannot_activate(
+        self, client: AsyncClient, regular_user: User, auth_headers: dict
+    ):
+        response = await client.patch(
+            f"/api/v1/admin/users/{regular_user.id}/activate", headers=auth_headers
+        )
+        assert response.status_code == 403
+
+
+class TestUpdateUserRole:
+    async def test_admin_can_promote_user(
+        self, client: AsyncClient, admin_user: User, regular_user: User, admin_headers: dict
+    ):
+        response = await client.patch(
+            f"/api/v1/admin/users/{regular_user.id}/role",
+            json={"role": "admin"},
+            headers=admin_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["role"] == "admin"
+
+    async def test_admin_cannot_change_own_role(
+        self, client: AsyncClient, admin_user: User, admin_headers: dict
+    ):
+        response = await client.patch(
+            f"/api/v1/admin/users/{admin_user.id}/role",
+            json={"role": "user"},
+            headers=admin_headers,
+        )
+        assert response.status_code == 400
+
+    async def test_invalid_role_returns_422(
+        self, client: AsyncClient, admin_user: User, regular_user: User, admin_headers: dict
+    ):
+        response = await client.patch(
+            f"/api/v1/admin/users/{regular_user.id}/role",
+            json={"role": "superuser"},
+            headers=admin_headers,
+        )
+        assert response.status_code == 422
+
+    async def test_regular_user_cannot_change_role(
+        self, client: AsyncClient, regular_user: User, auth_headers: dict
+    ):
+        response = await client.patch(
+            f"/api/v1/admin/users/{regular_user.id}/role",
+            json={"role": "admin"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 403
+
+
+class TestStats:
+    async def test_admin_can_get_stats(
+        self, client: AsyncClient, admin_user: User, regular_user: User, admin_headers: dict
+    ):
+        response = await client.get("/api/v1/admin/stats", headers=admin_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 2
+        assert data["admins"] >= 1
+        assert set(data) == {"total", "active", "admins", "online"}
+
+    async def test_regular_user_cannot_get_stats(
+        self, client: AsyncClient, regular_user: User, auth_headers: dict
+    ):
+        response = await client.get("/api/v1/admin/stats", headers=auth_headers)
+        assert response.status_code == 403
+
+
+class TestSearchAndFilter:
+    async def test_filter_by_is_active(
+        self, client: AsyncClient, admin_user: User, inactive_user: User, admin_headers: dict
+    ):
+        response = await client.get(
+            "/api/v1/admin/users?is_active=false", headers=admin_headers
+        )
+        assert response.status_code == 200
+        users = response.json()["data"]
+        assert all(u["is_active"] is False for u in users)
+
+    async def test_search_by_email(
+        self, client: AsyncClient, admin_user: User, regular_user: User, admin_headers: dict
+    ):
+        response = await client.get(
+            "/api/v1/admin/users?search=user@example.com", headers=admin_headers
+        )
+        assert response.status_code == 200
+        emails = [u["email"] for u in response.json()["data"]]
+        assert regular_user.email in emails
+        assert admin_user.email not in emails
