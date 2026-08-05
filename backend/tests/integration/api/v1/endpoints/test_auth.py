@@ -141,6 +141,23 @@ class TestLogin:
         assert response.status_code == 422
 
 
+class TestMe:
+    async def test_me_returns_current_user(
+        self, client: AsyncClient, regular_user: User, auth_headers: dict
+    ):
+        response = await client.get("/api/v1/auth/me", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == regular_user.id
+        assert data["email"] == regular_user.email
+        assert data["role"] == "user"
+        assert "hashed_password" not in data
+
+    async def test_me_unauthenticated_returns_401(self, client: AsyncClient):
+        response = await client.get("/api/v1/auth/me")
+        assert response.status_code == 401
+
+
 class TestRefresh:
     async def test_refresh_success(self, client: AsyncClient, regular_user: User):
         # First login to get a real refresh token

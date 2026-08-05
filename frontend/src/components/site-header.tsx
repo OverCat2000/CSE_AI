@@ -2,23 +2,20 @@ import Link from "next/link";
 import { CandlestickChart } from "lucide-react";
 
 import { BRAND } from "@/lib/brand";
-import { Toaster } from "@/components/ui/sonner";
+import { AuthNav } from "@/components/auth-nav";
 
-export default function AuthLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export function SiteHeader() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-background px-4 py-12">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b px-4 sm:px-6">
       <Link href="/" className="flex items-center gap-2">
         <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <CandlestickChart className="size-4" />
         </span>
-        <span className="font-heading text-lg font-semibold tracking-tight">
+        <span className="font-heading text-base font-semibold tracking-tight">
           {BRAND.name}
         </span>
       </Link>
-      {children}
-      <Toaster />
-    </div>
+      <AuthNav />
+    </header>
   );
 }

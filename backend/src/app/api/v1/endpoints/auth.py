@@ -9,12 +9,14 @@ from domain.users.schemas import (
     UserLogin,
     UserRegister,
     UserResponse,
+    UserProfile,
     TokenResponse,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from core.database import get_db
+from core.dependencies import get_current_user
 from core.security import (
     create_refresh_token,
     hash_password,
@@ -58,6 +60,11 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
         "refresh_token": create_refresh_token({"sub": str(user.id)}),
         "token_type": "bearer",
     }
+
+
+@router.get("/me", response_model=UserProfile)
+async def me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 @router.post("/refresh", response_model=TokenResponse)
